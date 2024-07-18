@@ -195,7 +195,7 @@ void __libqasan_hotpatch(void) {
   HOTPATCH(memmem)
   #ifndef __BIONIC__
   HOTPATCH(bzero)
-  HOTPATCH(explicit_bzero)
+  //HOTPATCH(explicit_bzero)
   HOTPATCH(mempcpy)
   HOTPATCH(bcmp)
   #endif
