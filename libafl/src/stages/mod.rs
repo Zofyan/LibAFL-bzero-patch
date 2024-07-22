@@ -2,7 +2,7 @@
 A [`Stage`] is a technique used during fuzzing, working on one [`crate::corpus::Corpus`] entry, and potentially altering it or creating new entries.
 A well-known [`Stage`], for example, is the mutational stage, running multiple [`crate::mutators::Mutator`]s against a [`crate::corpus::Testcase`], potentially storing new ones, according to [`crate::feedbacks::Feedback`].
 Other stages may enrich [`crate::corpus::Testcase`]s with metadata.
-*/
+ */
 
 use alloc::{
     borrow::{Cow, ToOwned},
@@ -84,9 +84,9 @@ pub mod unicode;
 /// Multiple stages will be scheduled one by one for each input.
 pub trait Stage<E, EM, Z>: UsesState
 where
-    E: UsesState<State = Self::State>,
-    EM: UsesState<State = Self::State>,
-    Z: UsesState<State = Self::State>,
+    E: UsesState<State=Self::State>,
+    EM: UsesState<State=Self::State>,
+    Z: UsesState<State=Self::State>,
 {
     /// This method will be called before every call to [`Stage::perform`].
     /// Initialize the restart tracking for this stage, _if it is not yet initialized_.
@@ -130,9 +130,9 @@ where
 /// A tuple holding all `Stages` used for fuzzing.
 pub trait StagesTuple<E, EM, S, Z>
 where
-    E: UsesState<State = S>,
-    EM: UsesState<State = S>,
-    Z: UsesState<State = S>,
+    E: UsesState<State=S>,
+    EM: UsesState<State=S>,
+    Z: UsesState<State=S>,
     S: UsesInput + HasCurrentStage,
 {
     /// Performs all `Stages` in this tuple.
@@ -147,9 +147,9 @@ where
 
 impl<E, EM, S, Z> StagesTuple<E, EM, S, Z> for ()
 where
-    E: UsesState<State = S>,
-    EM: UsesState<State = S>,
-    Z: UsesState<State = S>,
+    E: UsesState<State=S>,
+    EM: UsesState<State=S>,
+    Z: UsesState<State=S>,
     S: UsesInput + HasCurrentStage,
 {
     fn perform_all(
@@ -173,9 +173,9 @@ impl<Head, Tail, E, EM, Z> StagesTuple<E, EM, Head::State, Z> for (Head, Tail)
 where
     Head: Stage<E, EM, Z>,
     Tail: StagesTuple<E, EM, Head::State, Z> + HasConstLen,
-    E: UsesState<State = Head::State>,
-    EM: UsesState<State = Head::State> + EventProcessor<E, Z>,
-    Z: UsesState<State = Head::State>,
+    E: UsesState<State=Head::State>,
+    EM: UsesState<State=Head::State> + EventProcessor<E, Z>,
+    Z: UsesState<State=Head::State>,
     Head::State: HasCurrentStage,
 {
     /// Performs all stages in the tuple,
@@ -226,64 +226,64 @@ where
 }
 
 impl<Head, Tail, E, EM, Z>
-    IntoVec<Box<dyn Stage<E, EM, Z, State = Head::State, Input = Head::Input>>> for (Head, Tail)
+IntoVec<Box<dyn Stage<E, EM, Z, State=Head::State, Input=Head::Input>>> for (Head, Tail)
 where
     Head: Stage<E, EM, Z> + 'static,
     Tail: StagesTuple<E, EM, Head::State, Z>
-        + HasConstLen
-        + IntoVec<Box<dyn Stage<E, EM, Z, State = Head::State, Input = Head::Input>>>,
-    E: UsesState<State = Head::State>,
-    EM: UsesState<State = Head::State>,
-    Z: UsesState<State = Head::State>,
+    + HasConstLen
+    + IntoVec<Box<dyn Stage<E, EM, Z, State=Head::State, Input=Head::Input>>>,
+    E: UsesState<State=Head::State>,
+    EM: UsesState<State=Head::State>,
+    Z: UsesState<State=Head::State>,
     Head::State: HasCurrentStage,
 {
     fn into_vec_reversed(
         self,
-    ) -> Vec<Box<dyn Stage<E, EM, Z, State = Head::State, Input = Head::Input>>> {
+    ) -> Vec<Box<dyn Stage<E, EM, Z, State=Head::State, Input=Head::Input>>> {
         let (head, tail) = self.uncons();
         let mut ret = tail.0.into_vec_reversed();
         ret.push(Box::new(head));
         ret
     }
 
-    fn into_vec(self) -> Vec<Box<dyn Stage<E, EM, Z, State = Head::State, Input = Head::Input>>> {
+    fn into_vec(self) -> Vec<Box<dyn Stage<E, EM, Z, State=Head::State, Input=Head::Input>>> {
         let mut ret = self.into_vec_reversed();
         ret.reverse();
         ret
     }
 }
 
-impl<Tail, E, EM, Z> IntoVec<Box<dyn Stage<E, EM, Z, State = Tail::State, Input = Tail::Input>>>
-    for (Tail,)
+impl<Tail, E, EM, Z> IntoVec<Box<dyn Stage<E, EM, Z, State=Tail::State, Input=Tail::Input>>>
+for (Tail,)
 where
-    Tail: UsesState + IntoVec<Box<dyn Stage<E, EM, Z, State = Tail::State, Input = Tail::Input>>>,
-    Z: UsesState<State = Tail::State>,
-    EM: UsesState<State = Tail::State>,
-    E: UsesState<State = Tail::State>,
+    Tail: UsesState + IntoVec<Box<dyn Stage<E, EM, Z, State=Tail::State, Input=Tail::Input>>>,
+    Z: UsesState<State=Tail::State>,
+    EM: UsesState<State=Tail::State>,
+    E: UsesState<State=Tail::State>,
 {
-    fn into_vec(self) -> Vec<Box<dyn Stage<E, EM, Z, State = Tail::State, Input = Tail::Input>>> {
+    fn into_vec(self) -> Vec<Box<dyn Stage<E, EM, Z, State=Tail::State, Input=Tail::Input>>> {
         self.0.into_vec()
     }
 }
 
-impl<E, EM, Z> IntoVec<Box<dyn Stage<E, EM, Z, State = Z::State, Input = Z::Input>>>
-    for Vec<Box<dyn Stage<E, EM, Z, State = Z::State, Input = Z::Input>>>
+impl<E, EM, Z> IntoVec<Box<dyn Stage<E, EM, Z, State=Z::State, Input=Z::Input>>>
+for Vec<Box<dyn Stage<E, EM, Z, State=Z::State, Input=Z::Input>>>
 where
     Z: UsesState,
-    EM: UsesState<State = Z::State>,
-    E: UsesState<State = Z::State>,
+    EM: UsesState<State=Z::State>,
+    E: UsesState<State=Z::State>,
 {
-    fn into_vec(self) -> Vec<Box<dyn Stage<E, EM, Z, State = Z::State, Input = Z::Input>>> {
+    fn into_vec(self) -> Vec<Box<dyn Stage<E, EM, Z, State=Z::State, Input=Z::Input>>> {
         self
     }
 }
 
 impl<E, EM, S, Z> StagesTuple<E, EM, S, Z>
-    for Vec<Box<dyn Stage<E, EM, Z, State = S, Input = S::Input>>>
+for Vec<Box<dyn Stage<E, EM, Z, State=S, Input=S::Input>>>
 where
-    E: UsesState<State = S>,
-    EM: UsesState<State = S> + EventProcessor<E, Z>,
-    Z: UsesState<State = S>,
+    E: UsesState<State=S>,
+    EM: UsesState<State=S> + EventProcessor<E, Z>,
+    Z: UsesState<State=S>,
     S: UsesInput + HasCurrentStage + State,
 {
     /// Performs all stages in the `Vec`
@@ -336,8 +336,8 @@ impl<CB, E, EM, Z> Stage<E, EM, Z> for ClosureStage<CB, E, EM, Z>
 where
     CB: FnMut(&mut Z, &mut E, &mut Self::State, &mut EM) -> Result<(), Error>,
     E: UsesState,
-    EM: UsesState<State = Self::State>,
-    Z: UsesState<State = Self::State>,
+    EM: UsesState<State=Self::State>,
+    Z: UsesState<State=Self::State>,
     Self::State: HasNamedMetadata,
 {
     fn perform(
@@ -434,23 +434,23 @@ impl<CS, E, EM, OT, PS, Z> Stage<E, EM, Z> for PushStageAdapter<CS, EM, OT, PS, 
 where
     CS: Scheduler,
     Self::State: HasExecutions
-        + HasRand
-        + HasCorpus
-        + HasLastReportTime
-        + HasCurrentCorpusId
-        + HasNamedMetadata
-        + HasMetadata,
-    E: Executor<EM, Z> + HasObservers<Observers = OT, State = Self::State>,
-    EM: EventFirer<State = Self::State>
-        + EventRestarter
-        + HasEventManagerId
-        + ProgressReporter<State = Self::State>,
+    + HasRand
+    + HasCorpus
+    + HasLastReportTime
+    + HasCurrentCorpusId
+    + HasNamedMetadata
+    + HasMetadata,
+    E: Executor<EM, Z> + HasObservers<Observers=OT, State=Self::State>,
+    EM: EventFirer<State=Self::State>
+    + EventRestarter
+    + HasEventManagerId
+    + ProgressReporter<State=Self::State>,
     OT: ObserversTuple<Self::State>,
     PS: PushStage<CS, EM, OT, Z>,
-    Z: ExecutesInput<E, EM, State = Self::State>
-        + ExecutionProcessor
-        + EvaluatorObservers<OT>
-        + HasScheduler<Scheduler = CS>,
+    Z: ExecutesInput<E, EM, State=Self::State>
+    + ExecutionProcessor
+    + EvaluatorObservers<OT>
+    + HasScheduler<Scheduler=CS>,
 {
     fn perform(
         &mut self,
@@ -560,10 +560,11 @@ impl RetryCountRestartHelper {
         Ok(if tries_remaining == 0 {
             metadata.skipped.insert(corpus_id);
             false
-        } else if metadata.skipped.contains(&corpus_id) {
-            // skip this testcase, we already retried it often enough...
-            false
-        } else {
+        } //else if metadata.skipped.contains(&corpus_id) {
+        // skip this testcase, we already retried it often enough...
+        //     false
+        // }
+        else {
             true
         })
     }
@@ -764,8 +765,8 @@ pub mod test {
 
     impl<E, EM, Z> Stage<E, EM, Z> for ResumeSucceededStage<Z::State>
     where
-        E: UsesState<State = Z::State>,
-        EM: UsesState<State = Z::State>,
+        E: UsesState<State=Z::State>,
+        EM: UsesState<State=Z::State>,
         Z: UsesState,
         Z::State: HasMetadata,
     {
@@ -818,7 +819,7 @@ pub mod test {
             assert!(RetryCountRestartHelper::should_restart(
                 &mut state,
                 stage.name(),
-                1
+                1,
             )?);
             RetryCountRestartHelper::clear_progress(&mut state, stage.name())?;
         }
@@ -828,12 +829,12 @@ pub mod test {
             assert!(RetryCountRestartHelper::should_restart(
                 &mut state,
                 stage.name(),
-                2
+                2,
             )?);
             assert!(RetryCountRestartHelper::should_restart(
                 &mut state,
                 stage.name(),
-                2
+                2,
             )?);
             RetryCountRestartHelper::clear_progress(&mut state, stage.name())?;
         }
@@ -841,14 +842,14 @@ pub mod test {
         assert!(RetryCountRestartHelper::should_restart(
             &mut state,
             stage.name(),
-            2
+            2,
         )?);
         // task failed, let's resume
         // we still have one more try!
         assert!(RetryCountRestartHelper::should_restart(
             &mut state,
             stage.name(),
-            2
+            2,
         )?);
 
         // task failed, let's resume
@@ -856,7 +857,7 @@ pub mod test {
         assert!(!RetryCountRestartHelper::should_restart(
             &mut state,
             stage.name(),
-            2
+            2,
         )?);
         RetryCountRestartHelper::clear_progress(&mut state, stage.name())?;
 
@@ -864,7 +865,7 @@ pub mod test {
         assert!(!RetryCountRestartHelper::should_restart(
             &mut state,
             stage.name(),
-            2
+            2,
         )?);
         RetryCountRestartHelper::clear_progress(&mut state, stage.name())?;
 
